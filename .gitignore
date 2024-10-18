@@ -1,0 +1,7 @@
+.env
+.vscode
+venv/
+instance/
+OurTripKP.pem
+*pycache*
+*pytest_cache*
