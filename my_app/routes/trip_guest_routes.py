@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask import current_app as app
 from my_app.models import Trip, db, TripGuest
+from my_app.models.user import User
 
 trip_guests_bp = Blueprint('trip_guests', __name__)
 
@@ -46,3 +47,35 @@ def add_trip_guest():
         return jsonify({"error": "An error occurred while adding the user to the DB."}), 500
 
     return jsonify({"message": "Guest added successfully."}), 201
+
+# create a function called get_trip_guests that takes in a trip id and returns a list of guests associated with the trip.
+@trip_guests_bp.route('/get-trip-guests', methods=['GET'])
+def get_trip_guests():
+    trip_id = request.args.get('trip_id')
+
+    try:
+        trip_id = int(trip_id)
+    except ValueError:
+        return jsonify({"error": "Invalid trip ID."}), 400
+
+    # Check if the trip exists
+    trip = Trip.query.filter_by(id=trip_id).first()
+    if not trip:
+        return jsonify({"error": "Trip not found."}), 404
+
+    # Get all guests associated with the trip
+    guests = TripGuest.query.filter_by(trip_id=trip_id).all()
+    print(guests)
+
+    guest_list = []
+    for guest in guests:
+        user = User.query.filter_by(username=guest.guest_username).first()
+        print(user)
+        guest_list.append({
+            "guest_username": guest.guest_username,
+            "is_host": guest.is_host,
+            "guest_first_name": user.first_name,
+            "guest_last_name": user.last_name
+        })
+
+    return jsonify({"guests": guest_list}), 200    

@@ -1,36 +1,54 @@
 from flask import Blueprint, jsonify, request
 from my_app.models import User, UserUpload, db
 import os
-from boto3 import s3
+import boto3
 from botocore.exceptions import NoCredentialsError
 
+from my_app.models.trip import Trip
 
 user_uploads_bp = Blueprint('uploads', __name__)
-bucket_name = os.environ.get('BUCKET_NAME')
+bucket_name = os.environ.get('S3_BUCKET_NAME')
 
 @user_uploads_bp.route('/generate-presigned-url', methods=['POST'])
 def generate_presigned_url():
     file_name = request.json.get('file_name')
-    user_username = request.json.get('user_username')  # Optional metadata
+    user_username = request.json.get('user_username')
+    trip_id = request.json.get('trip_id')
+    file_type = request.json.get('file_type')
+
+    # convert trip id to int
+    try:
+        trip_id = int(trip_id)
+    except ValueError:
+        return jsonify({"error": "Invalid trip ID."}), 400
 
     if not file_name:
         return jsonify({"error": "File name is required."}), 400
+    
     
     # Check if the user exists
     user = User.query.filter_by(username=user_username).first()
     if not user:
         return jsonify({"error": "User not found."}), 404
+    
+    # Check if the trip exists
+    if trip_id:
+        trip = Trip.query.filter_by(id=trip_id).first()
+        if not trip:
+            return jsonify({"error": "Trip not found."}), 404
 
     # Set an expiration time for the pre-signed URL
     expiration = 3600  # 1 hour
-
+    
     try:
-        url = s3.generate_presigned_url(
+        s3_client = boto3.client('s3', region_name='us-east-1')
+        url = s3_client.generate_presigned_url(
             'put_object',
             Params={
                 'Bucket': bucket_name,
-                'Key': f"user_uploads/{user_username}/{file_name}",
-                'ContentType': 'image/jpeg'
+                'Key': f"user_uploads/{trip_id}/{user_username}/{file_name}",
+                'ContentType': file_type
+
             },
             ExpiresIn=expiration
         )
