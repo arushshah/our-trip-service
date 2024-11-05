@@ -7,11 +7,9 @@ class User(db.Model):
     __tablename__ = 'users'  # Optional, to specify table name
 
     # Defining columns with mapped_column()
-    username: Mapped[str] = mapped_column(String(45), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(20), primary_key=True) # user id will be the phone number
     first_name: Mapped[str] = mapped_column(String(45), nullable=False)
     last_name: Mapped[str] = mapped_column(String(45), nullable=False)
-    email: Mapped[datetime] = mapped_column(String(45), nullable=False, unique=True)
-    password: Mapped[datetime] = mapped_column(String(100), nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc)
     )
@@ -19,10 +17,8 @@ class User(db.Model):
     def __repr__(self):
         return (
             f"<User("
-            f"username='{self.username}', "
+            f"user_id/phone_number='{self.user_id}', "
             f"first_name='{self.first_name}', "
             f"last_name='{self.last_name}', "
-            f"email='{self.email}', "
-            f"password='******'"
             f")>"
         )

@@ -8,9 +8,10 @@ class Trip(db.Model):
 
     # Defining columns with mapped_column()
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    token: Mapped[str] = mapped_column(String(200), nullable=False)
     name: Mapped[str] = mapped_column(String(45), nullable=False)  # Part of composite key
     description: Mapped[str] = mapped_column(String(200), nullable=True)
-    host_username: Mapped[str] = mapped_column(String(45), nullable=False)
+    host_user_id: Mapped[str] = mapped_column(String(45), nullable=False)
     start_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     end_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -18,4 +19,4 @@ class Trip(db.Model):
     )
 
     def __repr__(self):
-        return f"<Trip(id={self.id}, name='{self.name}', host='{self.host_username}', start_date='{self.start_date}', end_date='{self.end_date}')>"
+        return f"<Trip(id={self.id}, name='{self.name}', host='{self.host_user_id}', start_date='{self.start_date}', end_date='{self.end_date}')>"

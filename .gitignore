@@ -5,3 +5,9 @@ instance/
 OurTripKP.pem
 *pycache*
 *pytest_cache*
+.firebaserc
+bin/
+firebase-debug.log
+lib/
+ui-debug.log
+my_app/firebaseServiceAccountKey.json
