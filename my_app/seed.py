@@ -1,6 +1,6 @@
 from datetime import datetime
-from my_app.app import create_app
-from my_app.models import User, Trip, TripGuest, db
+from app import create_app
+from models import User, Trip, TripGuest, db
 
 app = create_app()
 

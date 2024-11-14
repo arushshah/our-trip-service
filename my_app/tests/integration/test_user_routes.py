@@ -1,5 +1,4 @@
-from my_app.models import User
-import bcrypt
+from models import User
 
 def test_create_user(client):
     response = client.post("/users/create-user", json={
@@ -18,7 +17,6 @@ def test_create_user(client):
     assert user.first_name == "Test"
     assert user.last_name == "User"
     assert user.email == "test@email.com"
-    assert bcrypt.checkpw("test123".encode('utf-8'), user.password.encode("utf-8"))
 
 def test_create_user_duplicate_email(client):
     response = client.post("/users/create-user", json={

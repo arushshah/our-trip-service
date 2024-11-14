@@ -1,0 +1,16 @@
+.pytest_cache
+.vscode
+venv
+.env
+.firebaserc
+.gitignore
+app.log
+firebase-debug.log
+firebase.json
+OurTripKP.pem
+my_app/*pycache*
+my_app/.pytest_cache
+my_app/instance/dev.db
+my_app/models/__pycache__
+my_app/routes/__pycache__
+my_app/tests

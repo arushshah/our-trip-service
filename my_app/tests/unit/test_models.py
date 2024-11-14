@@ -1,4 +1,4 @@
-from my_app.models import User, Trip, TripGuest, UserUpload
+from models import User, Trip, TripGuest, UserUpload
 
 def test_trip_model():
     trip = Trip(name="Test Trip", description="Test description", host_username="test_user", start_date="2021-01-01", end_date="2021-01-10")
