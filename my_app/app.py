@@ -1,11 +1,10 @@
-from flask import Flask, jsonify, request
-import logging
+from flask import Flask
 from my_app.config import get_config
 from my_app.models import db
 from my_app.routes import register_blueprints
 from my_app.logger import setup_logger
 from flask_cors import CORS
-from firebase_admin import credentials, auth, initialize_app
+from firebase_admin import credentials, initialize_app
 
 def create_app():
     app = Flask(__name__)
@@ -14,7 +13,7 @@ def create_app():
     app.config.from_object(get_config())
     
     app.logger = setup_logger()
-    cred = credentials.Certificate("/Users/arush/Documents/Github/OurTripApp/our-trip-service/my_app/firebaseServiceAccountKey.json")
+    cred = credentials.Certificate("C:/Users/arush/Documents/Github/our-trip-service/my_app/firebaseServiceAccountKey.json")
     initialize_app(cred)
 
     db.init_app(app)
