@@ -2,7 +2,11 @@ from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
-from my_app.models.user import User
-from my_app.models.trip import Trip
-from my_app.models.trip_guest import TripGuest, RsvpStatus
-from my_app.models.user_upload import UserUpload
+from .user import User
+from .trip import Trip
+from .trip_guest import TripGuest, RsvpStatus
+from .user_upload import UserUpload, DocumentCategory
+from .trip_todo import TripTodo
+from .trip_expense import TripExpense
+from .trip_expense_share import TripExpenseShare
+from .trip_location import TripLocation

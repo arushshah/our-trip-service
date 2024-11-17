@@ -11,3 +11,6 @@ firebase-debug.log
 lib/
 ui-debug.log
 my_app/firebaseServiceAccountKey.json
+firebase.json
+Dockerfile
+app.log

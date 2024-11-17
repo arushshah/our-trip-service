@@ -1,18 +1,9 @@
-TO CREATE INFRA:
-RUN THE FOLLOWING
+LOG INTO EC2
+ssh -i OurTripKP.pem ec2-user@ec2-54-210-183-107.compute-1.amazonaws.com
 
-awslocal cloudformation create-stack --stack-name our-trip-stack --template-body file://aws-infra/main.yaml
+RUN DOCKER CONTAINER LOCALLY
 
-TO DELETE INFRA:
-RUN THE FOLLOWING
+docker run -v ~/.aws:/root/.aws -p 5555:5555 our-trip-service
 
-awslocal cloudformation delete-stack --stack-name our-trip-stack
-
-ENDPOINTS
-
-/create-trip
-
-https://ypfb2xz8ci.execute-api.us-east-1.amazonaws.com/dev/create-trip
-
-CONNECTING TO EC2:
-ssh -i OurTripKP.pem ec2-user@ec2-3-86-69-1.compute-1.amazonaws.com
+BUILD AND DEPLOY
+./build.sh

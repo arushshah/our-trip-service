@@ -1,4 +1,4 @@
-from my_app.models import User, Trip
+from models import User, Trip
 
 def add_user(client):
      client.post("/users/create-user", json={

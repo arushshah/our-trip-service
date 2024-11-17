@@ -1,7 +1,7 @@
 import os
-from my_app.config.dev import DevConfig
-from my_app.config.test import TestConfig
-from my_app.config.prod import ProdConfig
+from config.dev import DevConfig
+from config.test import TestConfig
+from config.prod import ProdConfig
 
 def get_config():
     env = os.getenv('FLASK_ENV', 'development')
