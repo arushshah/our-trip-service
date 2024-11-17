@@ -9,6 +9,9 @@ from .utils import get_request_data, token_required
 user_uploads_bp = Blueprint('uploads', __name__)
 
 bucket_name = os.environ.get('S3_BUCKET_NAME')
+ALLOWED_EXTENSIONS = {'doc', 'docx', 'xls', 'xlsx', 'txt', 'pdf', 'jpg', 'jpeg', 'png', 'tiff', 'ppt', 'pptx'}
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @user_uploads_bp.route('/generate-presigned-url', methods=['POST'])
 @cross_origin()
@@ -35,6 +38,9 @@ def generate_presigned_url(token):
 
     if not file_name:
         return jsonify({"error": "File name is required."}), 400
+    
+    if not allowed_file(file_name):
+        return jsonify({"error": "File type not allowed."}), 400
         
     # validate document category
     if not document_category:
@@ -140,8 +146,8 @@ def retrieve_uploads(token):
 @cross_origin()
 @token_required
 def delete_upload(token):
-    app.logger.debug(data)
     data = get_request_data(token)
+    app.logger.debug(data)
     file_name = data['file_name']
     trip_id = data['trip_id']
     return delete_trip_uploads(file_name, trip_id)
