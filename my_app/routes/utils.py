@@ -54,4 +54,7 @@ def validate_user_trip(user_id, trip_id):
     trip = Trip.query.filter_by(id=trip_id).first()
     if not trip:
         return False, jsonify({"error": "Trip not found."})
+    guest = TripGuest.query.filter_by(trip_id=trip_id, guest_id=user_id).first()
+    if not guest:
+        return False, jsonify({"error": "User is not a guest of this trip."})
     return True, None

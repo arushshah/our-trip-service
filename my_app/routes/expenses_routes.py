@@ -2,7 +2,7 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app as app
 from flask_cors import cross_origin
 from models import User, db, Trip, TripGuest, TripExpense, TripExpenseShare
-from .utils import token_required, get_request_data
+from .utils import token_required, get_request_data, validate_user_trip
 
 expenses_bp = Blueprint('expenses', __name__)
 
@@ -22,21 +22,9 @@ def add_expense(token):
 
     users_involved = data['usersInvolved']
 
-    try:
-        trip_id = int(trip_id)
-    except ValueError:
-        app.logger.error("Invalid input. 400 Error")
-        return jsonify({"error": "Invalid trip ID."}), 400
-    
-    # Check if the trip exists
-    trip = Trip.query.filter_by(id=trip_id).first()
-    if not trip:
-        return jsonify({"error": "Trip not found."}), 404
-    
-    # Check if the user is a guest of the trip
-    guest = TripGuest.query.filter_by(trip_id=trip_id, guest_id=user_id).first()
-    if not guest:
-        return jsonify({"error": "User is not a guest of this trip."}), 403
+    valid, error = validate_user_trip(user_id, trip_id)
+    if not valid:
+        return jsonify({"message": f"Invalid user or trip id: {error}"}), 400
     
     try:
         expense_amount = float(expense_amount)
@@ -89,22 +77,9 @@ def update_expense(token):
 
     users_involved = data['usersInvolved']
 
-    try:
-        trip_id = int(trip_id)
-        expense_id = int(expense_id)
-    except ValueError:
-        app.logger.error("Invalid input. 400 Error")
-        return jsonify({"error": "Invalid trip ID or expense ID."}), 400
-    
-    # Check if the trip exists
-    trip = Trip.query.filter_by(id=trip_id).first()
-    if not trip:
-        return jsonify({"error": "Trip not found."}), 404
-    
-    # Check if the user is a guest of the trip
-    guest = TripGuest.query.filter_by(trip_id=trip_id, guest_id=user_id).first()
-    if not guest:
-        return jsonify({"error": "User is not a guest of this trip."}), 403
+    valid, error = validate_user_trip(user_id, trip_id)
+    if not valid:
+        return jsonify({"message": f"Invalid user or trip id: {error}"}), 400
     
     try:
         expense_amount = float(expense_amount)
@@ -154,21 +129,9 @@ def get_expenses(token):
     user_id = data['user_id']
     trip_id = data['trip_id']
 
-    try:
-        trip_id = int(trip_id)
-    except ValueError:
-        app.logger.error("Invalid input. 400 Error")
-        return jsonify({"error": "Invalid trip ID."}), 400
-    
-    # Check if the trip exists
-    trip = Trip.query.filter_by(id=trip_id).first()
-    if not trip:
-        return jsonify({"error": "Trip not found."}), 404
-    
-    # Check if the user is a guest of the trip
-    guest = TripGuest.query.filter_by(trip_id=trip_id, guest_id=user_id).first()
-    if not guest:
-        return jsonify({"error": "User is not a guest of this trip."}), 403
+    valid, error = validate_user_trip(user_id, trip_id)
+    if not valid:
+        return jsonify({"message": f"Invalid user or trip id: {error}"}), 400
     
     # query the expenses table for all expenses associated with a trip
     expenses = TripExpense.query.filter_by(trip_id=trip_id).all()
@@ -213,21 +176,9 @@ def delete_expense(token):
     expense_id = data['expense_id']
     trip_id = data['trip_id']
 
-    try:
-        trip_id = int(trip_id)
-    except ValueError:
-        app.logger.error("Invalid input. 400 Error")
-        return jsonify({"error": "Invalid trip ID."}), 400
-    
-    # Check if the trip exists
-    trip = Trip.query.filter_by(id=trip_id).first()
-    if not trip:
-        return jsonify({"error": "Trip not found."}), 404
-    
-    # Check if the user is a guest of the trip
-    guest = TripGuest.query.filter_by(trip_id=trip_id, guest_id=user_id).first()
-    if not guest:
-        return jsonify({"error": "User is not a guest of this trip."}), 403
+    valid, error = validate_user_trip(user_id, trip_id)
+    if not valid:
+        return jsonify({"message": f"Invalid user or trip id: {error}"}), 400
     
     expense = TripExpense.query.filter_by(id=expense_id).first()
     if not expense:

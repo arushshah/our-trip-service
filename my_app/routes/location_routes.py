@@ -157,8 +157,6 @@ def update_location(token):
     
     return jsonify({"message": "Location successfully updated."}), 200
 
-
-
 @trip_locations_bp.route('/delete-location', methods=['DELETE'])
 @cross_origin()
 @token_required
@@ -190,3 +188,43 @@ def delete_location(token):
         return jsonify({"error": "An error occurred while deleting the location."}), 500
     
     return jsonify({"message": "Location successfully deleted."}), 200
+
+@trip_locations_bp.route('/delete-category', methods=['DELETE'])
+@cross_origin()
+@token_required
+def delete_category(token):
+    app.logger.info("trip_locations/delete-cateeory")
+
+    data = get_request_data(token)
+    app.logger.debug(data)
+    
+    user_id = data['user_id']
+    trip_id = data['trip_id']
+
+    valid, error = validate_user_trip(user_id, trip_id)
+    if not valid:
+        return jsonify({"message": f"Invalid user or trip id: {error}"}), 400
+    
+    category = data['category']
+    category_id = None
+
+    if not category:
+        return jsonify({"error": "Category name is required."}), 400
+    
+    if category:
+        category = LocationCategory.query.filter_by(trip_id=trip_id, name=category).first()
+        if not category:
+            return jsonify({"error": "Category not found."}), 404
+        category_id = category.id
+
+    try:
+        db.session.delete(category)
+        for location in TripLocation.query.filter_by(trip_id=trip_id, category_id=category_id).all():
+            location.category_id = None
+        db.session.commit()
+    except Exception as e:
+        app.logger.error(f"Error deleting category: {e}")
+        db.session.rollback()
+        return jsonify({"error": "An error occurred while deleting the category."}), 500
+    
+    return jsonify({"message": "Category successfully deleted."}), 200
