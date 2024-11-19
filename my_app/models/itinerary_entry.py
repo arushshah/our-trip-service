@@ -4,11 +4,12 @@ from sqlalchemy.orm import Mapped, mapped_column
 from models import db
 from enum import Enum
 
-class LocationCategory(db.Model):
-    __tablename__ = 'location_categories'
+class ItineraryEntry(db.Model):
+    __tablename__ = 'itinerary_entries'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     trip_id: Mapped[int] = mapped_column(Integer, ForeignKey('trips.id'), nullable=False, index=True)
-    name: Mapped[str] = mapped_column(String(50), nullable=False)
+    date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    description: Mapped[str] = mapped_column(String(200), nullable=False)
 
     __table_args__ = (db.UniqueConstraint('trip_id', 'name'))
