@@ -12,4 +12,4 @@ class ItineraryEntry(db.Model):
     date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     description: Mapped[str] = mapped_column(String(200), nullable=False)
 
-    __table_args__ = (db.UniqueConstraint('trip_id', 'name'))
+    __table_args__ = (db.UniqueConstraint('trip_id', 'name'),)

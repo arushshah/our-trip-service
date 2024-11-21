@@ -11,4 +11,4 @@ class LocationCategory(db.Model):
     trip_id: Mapped[int] = mapped_column(Integer, ForeignKey('trips.id'), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(50), nullable=False)
 
-    __table_args__ = (db.UniqueConstraint('trip_id', 'name'))
+    __table_args__ = (db.UniqueConstraint('trip_id', 'name'),)
