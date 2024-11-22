@@ -49,7 +49,8 @@ def add_expense(token):
             new_expense_share = TripExpenseShare(
                 expense_id=new_expense.id,
                 user_id=user['selectedUserId'],
-                amount=user['amount']
+                amount=user['amount'],
+                trip_id=trip_id
             )
             db.session.add(new_expense_share)
         db.session.commit()
@@ -104,7 +105,8 @@ def update_expense(token):
                 new_expense_share = TripExpenseShare(
                     expense_id=expense_id,
                     user_id=user['selectedUserId'],
-                    amount=user['amount']
+                    amount=user['amount'],
+                    trip_id=trip_id
                 )
                 db.session.add(new_expense_share)
             else:

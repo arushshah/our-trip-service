@@ -1,15 +1,18 @@
 import base64
-from datetime import datetime
+from datetime import datetime, timedelta
 import hashlib
+import os
 import uuid
+import boto3
 from flask import Blueprint, jsonify, request, current_app as app
 from flask_cors import cross_origin
-from models import User, Trip, db, TripGuest, RsvpStatus, TripTodo, UserUpload
+from models import User, Trip, db, TripGuest, RsvpStatus, TripTodo, UserUpload, ItineraryEntry, TripExpense, TripExpenseShare, LocationCategory, TripLocation
 from .utils import check_required_json_data, get_request_data, token_required
 from .user_upload_routes import delete_trip_uploads
 
 trips_bp = Blueprint('trips', __name__)
 
+# TODO: mismatch in user input for trip dates and actual trip dates, also the itinerary default date creation is wrong
 @trips_bp.route('/create-trip', methods=['POST'])
 @cross_origin()
 @token_required
@@ -73,6 +76,15 @@ def create_trip(token):
         # Add the host as a guest to the trip
         new_trip_guest = TripGuest(trip_id=new_trip.id, guest_id=user_id, is_host=True, rsvp_status=RsvpStatus.YES)
         db.session.add(new_trip_guest)
+
+        # Add empty itinerary entries for days of the trip
+        delta = trip_end_date - trip_start_date
+        for i in range(delta.days + 1):
+            itinerary_date = trip_start_date + timedelta(days=i)
+            item_id = uuid.uuid4().hex
+            itinerary_entry = ItineraryEntry(trip_id=new_trip.id, date=itinerary_date, description='', id=item_id)
+            db.session.add(itinerary_entry)
+
         db.session.commit()  # Commit the new_trip_guest
         return jsonify({"message": "Trip created successfully."}), 201
 
@@ -247,16 +259,31 @@ def delete_trip(token):
         return jsonify({"error": "Trip not found."}), 404
 
     # Check if the user is the host of the trip
-    if trip.host_id != user.user_id:
+    if trip.host_id != user.id:
         return jsonify({"error": "User is not the host of this trip."}), 403
 
     try:
+        # delete all trip guests
         TripGuest.query.filter_by(trip_id=trip_id).delete()
-        Trip.query.filter_by(id=trip_id).delete()
+        # delete all expenses associated with the trip
+        TripExpense.query.filter_by(trip_id=trip_id).delete()
+        TripExpenseShare.query.filter_by(trip_id=trip_id).delete()
+
+        # delete all locations
+        TripLocation.query.filter_by(trip_id=trip_id).delete()
+        LocationCategory.query.filter_by(trip_id=trip_id).delete()
+
+        # delete itineraries
+        ItineraryEntry.query.filter_by(trip_id=trip_id).delete()
+
+        # delete todos
+        TripTodo.query.filter_by(trip_id=trip_id).delete()
         uploads = UserUpload.query.filter_by(trip_id=trip_id).all()
         for upload in uploads:
             delete_trip_uploads(upload.file_name, trip_id)
             db.session.delete(upload)
+        
+        Trip.query.filter_by(id=trip_id).delete()
 
         db.session.commit()
         return jsonify({"message": "Trip deleted successfully."}), 200

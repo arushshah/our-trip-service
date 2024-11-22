@@ -10,6 +10,7 @@ class TripExpenseShare(db.Model):
     expense_id: Mapped[int] = mapped_column(Integer, ForeignKey('trip_expenses.id'), nullable=False, index=True)
     user_id: Mapped[str] = mapped_column(String(20), ForeignKey('users.id'), nullable=False, index=True)
     amount: Mapped[float] = mapped_column(Float, nullable=False)
+    trip_id: Mapped[int] = mapped_column(Integer, ForeignKey('trips.id'), nullable=False, index=True)
 
     def __repr__(self):
         return f"<TripExpenseShare(id={self.id}, expense_id={self.expense_id}, user_id='{self.user_id}', amount={self.amount})>"
