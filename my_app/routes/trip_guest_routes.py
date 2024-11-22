@@ -102,22 +102,25 @@ def delete_trip_guest(token):
     
     user_id = data["user_id"]
     trip_id = data["trip_id"]
+    to_delete_username = data["to_delete_username"]
+    
 
     valid, error = validate_user_trip(user_id, trip_id)
     if not valid:
         return jsonify({"message": f"Invalid user or trip id: {error}"}), 400
 
-    # Check if the user is a guest of the trip
-    trip_guest = TripGuest.query.filter_by(trip_id=trip_id, guest_id=user_id).first()
-    if not trip_guest:
-        return jsonify({"error": "User is not a guest of this trip."}), 404
+    # check if the user is the host of the trip
+    deleter = TripGuest.query.filter_by(trip_id=trip_id, guest_id=user_id).first()
+    if not deleter.is_host:
+        return jsonify({"error": "Only hosts can delete trip guests."}), 403
+    
+    delete_candidate = TripGuest.query.filter_by(trip_id=trip_id, guest_id=to_delete_username).first()
+    if not delete_candidate:
+        return jsonify({"error": "Guest not found."}), 404
 
-    # the host should not be able to delete themselves from the trip
-    if trip_guest.is_host:
-        return jsonify({"error": "Host cannot delete themselves from the trip."}), 403
     try:
         # Delete the guest from the trip
-        db.session.delete(trip_guest)
+        db.session.delete(delete_candidate)
         db.session.commit()
 
     except Exception as e:
