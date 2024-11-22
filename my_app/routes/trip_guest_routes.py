@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from flask import current_app as app
 from flask_cors import cross_origin
 from models import Trip, db, TripGuest, User
-from .utils import token_required, get_request_data
+from .utils import token_required, get_request_data, validate_user_trip
 
 trip_guests_bp = Blueprint('trip_guests', __name__)
 
@@ -70,17 +70,11 @@ def get_trip_guests(token):
     app.logger.debug(data)
 
     trip_id = data['trip_id']
+    user_id = data['user_id']
 
-    try:
-        trip_id = int(trip_id)
-    except ValueError as e:
-        app.logger.error(e)
-        return jsonify({"error": "Invalid trip ID."}), 400
-
-    # Check if the trip exists
-    trip = Trip.query.filter_by(id=trip_id).first()
-    if not trip:
-        return jsonify({"error": "Trip not found."}), 404
+    valid, error = validate_user_trip(user_id, trip_id)
+    if not valid:
+        return jsonify({"message": f"Invalid user or trip id: {error}"}), 400
 
     # Get all guests associated with the trip and whose rsvp status is not 'None'
 
@@ -102,7 +96,6 @@ def get_trip_guests(token):
 @trip_guests_bp.route("/delete-trip-guest", methods=["DELETE"])
 @cross_origin()
 @token_required
-#@check_required_json_data(["trip_id"])
 def delete_trip_guest(token):
     data = get_request_data(token)
     app.logger.debug(data)
@@ -110,16 +103,9 @@ def delete_trip_guest(token):
     user_id = data["user_id"]
     trip_id = data["trip_id"]
 
-    try:
-        trip_id = int(trip_id)
-    except ValueError as e:
-        app.logger.error(e)
-        return jsonify({"error": "Invalid trip ID."}), 400
-
-    # Check if the trip exists
-    trip = Trip.query.filter_by(id=trip_id).first()
-    if not trip:
-        return jsonify({"error": "Trip not found."}), 404
+    valid, error = validate_user_trip(user_id, trip_id)
+    if not valid:
+        return jsonify({"message": f"Invalid user or trip id: {error}"}), 400
 
     # Check if the user is a guest of the trip
     trip_guest = TripGuest.query.filter_by(trip_id=trip_id, guest_id=user_id).first()
@@ -247,3 +233,43 @@ def get_guest_info(token):
     }
 
     return jsonify({"guest": guest_info}), 200
+
+@trip_guests_bp.route('/set-new-host', methods=['PUT'])
+@cross_origin()
+@token_required
+def set_new_host(token):
+    app.logger.info("trip_guests/set-new-host")
+    data = get_request_data(token)
+    app.logger.debug(data)
+
+    trip_id = data['trip_id']
+    user_id = data['user_id']
+    new_host_id = data['new_host_id']
+
+    valid, error = validate_user_trip(user_id, trip_id)
+    if not valid:
+        return jsonify({"message": f"Invalid user or trip id: {error}"}), 400
+    
+    # Check if the new host is a guest of the trip
+    new_host = TripGuest.query.filter_by(trip_id=trip_id, guest_id=new_host_id).first()
+    if not new_host:
+        return jsonify({"error": "New host is not a guest of this trip."}), 404
+    
+    # Check if the user is the current host of the trip
+    current_host = TripGuest.query.filter_by(trip_id=trip_id, guest_id=user_id, is_host=True).first()
+    if not current_host:
+        return jsonify({"error": "User is not the host of this trip."}), 403
+    
+    # Update the host
+    current_host.is_host = False
+    new_host.is_host = True
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        app.logger.error(f"Error setting new host: {e}")
+        db.session.rollback()
+        return jsonify({"error": "An error occurred while setting the new host."}), 500
+    
+    return jsonify({"message": "New host set successfully."}), 200
+

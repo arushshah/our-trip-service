@@ -54,7 +54,7 @@ def generate_presigned_url(token):
         
     expiration = 300
     s3_client = boto3.client('s3', region_name='us-east-1')
-    s3_key = f"user_uploads/{document_category.value}/{trip_id}/{user_id}/{file_name}"
+    s3_key = f"user_uploads/{trip_id}/{document_category.value}/{file_name}"
 
     if url_type == "download":
         try:
