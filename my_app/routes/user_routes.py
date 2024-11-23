@@ -54,4 +54,4 @@ def validate_user():
     if not user:
         app.logger.error("User does not exist")
         return jsonify({"error": "User does not exist."}), 401
-    return jsonify({"message": "User validated successfully.", "phoneNumber": user.phone_number, "firstName": user.first_name, "lastName": user.last_name}), 200
+    return jsonify({"message": "User validated successfully.", "phoneNumber": user.phone_number, "firstName": user.first_name, "lastName": user.last_name, "userId": user.id}), 200
