@@ -25,8 +25,6 @@ def create_trip():
     db.session.commit()
 
 def add_user_to_trip():
-    user = User.query.filter_by(id="test_user").first()
-    trip = Trip.query.filter_by(id=1).first()
     trip_guest = TripGuest(trip_id=1, guest_id="test_user", is_host=True, rsvp_status="YES")
     db.session.add(trip_guest)
     db.session.commit()
