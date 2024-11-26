@@ -1,8 +1,8 @@
 from functools import wraps
-from flask import request, jsonify, redirect, current_app as app
+from flask import request, jsonify, current_app as app
 from functools import wraps
 from firebase_admin import auth
-from models import Trip, db, TripGuest, User, TripLocation
+from models import Trip, TripGuest, User
 
 def token_required(f):
     @wraps(f)
@@ -33,14 +33,6 @@ def get_request_data(token=None):
             else:
                 return request.get_json()
         return {}
-
-def check_required_json_data(required_fields):
-    data = request.json
-    missing_fields = [field for field in required_fields if field not in data]
-    if missing_fields:
-        return False, jsonify({"error": f"Missing fields: {', '.join(missing_fields)}"})
-    else:
-        return True, None
 
 def validate_user_trip(user_id, trip_id):
     try:

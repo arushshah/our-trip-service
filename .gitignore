@@ -14,3 +14,4 @@ my_app/firebaseServiceAccountKey.json
 firebase.json
 Dockerfile
 app.log
+test_app.log

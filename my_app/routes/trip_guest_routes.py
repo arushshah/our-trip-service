@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify
 from flask import current_app as app
 from flask_cors import cross_origin
 from models import Trip, db, TripGuest, User
@@ -9,7 +9,6 @@ trip_guests_bp = Blueprint('trip_guests', __name__)
 @trip_guests_bp.route('/add-trip-guest', methods=['POST'])
 @cross_origin()
 @token_required
-#@check_required_json_data(['trip_id'])
 def add_trip_guest(token):
     app.logger.info("trip_guests/add-trip-guest")
 
@@ -59,11 +58,9 @@ def add_trip_guest(token):
 
     return jsonify({"message": "Guest added successfully."}), 201
 
-# create a function called get_trip_guests that takes in a trip id and returns a list of guests associated with the trip.
 @trip_guests_bp.route('/get-trip-guests', methods=['GET'])
 @cross_origin()
 @token_required
-#@check_required_args_data(['trip_id'])
 def get_trip_guests(token):
     app.logger.info("trip_guests/get-trip-guests")
     data = get_request_data(token)
@@ -103,7 +100,6 @@ def delete_trip_guest(token):
     user_id = data["user_id"]
     trip_id = data["trip_id"]
     to_delete_username = data["to_delete_username"]
-    
 
     valid, error = validate_user_trip(user_id, trip_id)
     if not valid:
@@ -130,10 +126,39 @@ def delete_trip_guest(token):
 
     return jsonify({"message": "Guest deleted successfully."}), 200
 
+@trip_guests_bp.route("/leave-trip", methods=["DELETE"])
+@cross_origin()
+@token_required
+def leave_trip(token):
+    data = get_request_data(token)
+    app.logger.debug(data)
+    
+    user_id = data["user_id"]
+    trip_id = data["trip_id"]
+
+    valid, error = validate_user_trip(user_id, trip_id)
+    if not valid:
+        return jsonify({"message": f"Invalid user or trip id: {error}"}), 400
+    
+    delete_candidate = TripGuest.query.filter_by(trip_id=trip_id, guest_id=user_id).first()
+    if not delete_candidate:
+        return jsonify({"error": "Guest not found."}), 404
+
+    try:
+        # Delete the guest from the trip
+        db.session.delete(delete_candidate)
+        db.session.commit()
+
+    except Exception as e:
+        app.logger.error(f"Error deleting guest from trip: {e}")
+        db.session.rollback()
+        return jsonify({"error": "An error occurred while deleting the user from the DB."}), 500
+
+    return jsonify({"message": "Guest deleted successfully."}), 200
+
 @trip_guests_bp.route("/update-rsvp-status", methods=["PUT"])
 @cross_origin()
 @token_required
-#@check_required_json_data(["trip_id", "rsvp_status"])
 def update_rsvp_status(token):
 
     data = get_request_data(token)
@@ -182,7 +207,6 @@ def update_rsvp_status(token):
 @trip_guests_bp.route("/accept-invite", methods=["POST"])
 @cross_origin()
 @token_required
-#@check_required_json_data(["trip_token"])
 def accept_invite(token):
     data = get_request_data(token)
     app.logger.debug(data)
@@ -215,7 +239,6 @@ def accept_invite(token):
 @trip_guests_bp.route('/get-guest-info', methods=['GET', 'OPTIONS'])
 @cross_origin()
 @token_required
-#@check_required_args_data(['trip_id'])
 def get_guest_info(token):
     app.logger.info("trip_guests/get-guest-info")
     data = get_request_data(token)

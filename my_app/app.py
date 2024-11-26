@@ -3,6 +3,7 @@ from flask import Flask
 from config import get_config
 from models import db
 from routes import register_blueprints
+import firebase_admin
 from firebase_admin import credentials, initialize_app
 import boto3
 import json
@@ -46,8 +47,13 @@ def create_app():
     firebase_key = get_parameter('firebaseKey')
     firebase_key_dict = json.loads(firebase_key)
 
-    cred = credentials.Certificate(firebase_key_dict)
-    initialize_app(cred)
+    try:
+        firebase_admin.get_app()
+        app.logger.info("Firebase app already initialized.")
+    except ValueError:
+        cred = credentials.Certificate(firebase_key_dict)
+        initialize_app(cred)
+        app.logger.info("Firebase app initialized.")
 
     db.init_app(app)
 

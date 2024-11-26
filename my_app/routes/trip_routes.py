@@ -1,18 +1,15 @@
 import base64
 from datetime import datetime, timedelta
 import hashlib
-import os
 import uuid
-import boto3
-from flask import Blueprint, jsonify, request, current_app as app
+from flask import Blueprint, jsonify, current_app as app
 from flask_cors import cross_origin
 from models import User, Trip, db, TripGuest, RsvpStatus, TripTodo, UserUpload, ItineraryEntry, TripExpense, TripExpenseShare, LocationCategory, TripLocation
-from .utils import check_required_json_data, get_request_data, token_required
+from .utils import get_request_data, token_required
 from .user_upload_routes import delete_trip_uploads
 
 trips_bp = Blueprint('trips', __name__)
 
-# TODO: mismatch in user input for trip dates and actual trip dates, also the itinerary default date creation is wrong
 @trips_bp.route('/create-trip', methods=['POST'])
 @cross_origin()
 @token_required
@@ -21,10 +18,10 @@ def create_trip(token):
     data = get_request_data(token)
 
     app.logger.debug(data)
-    trip_name = data['trip_name']
-    trip_description = data['trip_description']
-    trip_start_date = data['trip_start_date']
-    trip_end_date = data['trip_end_date']
+    trip_name = data['trip_name'] if 'trip_name' in data else None
+    trip_description = data['trip_description'] if 'trip_description' in data else None
+    trip_start_date = data['trip_start_date'] if 'trip_start_date' in data else None
+    trip_end_date = data['trip_end_date'] if 'trip_end_date' in data else None
 
     user_id = data['user_id']
 
@@ -96,7 +93,7 @@ def create_trip(token):
 @trips_bp.route('/get-user-trips', methods=['GET'])
 @cross_origin()
 @token_required
-def get_trips(token):
+def get_user_trips(token):
     app.logger.info("trips/get-user-trips")
     data = get_request_data(token)
     app.logger.debug(data)
@@ -292,24 +289,6 @@ def delete_trip(token):
         db.session.rollback()
         return jsonify({"error": "An error occurred while deleting the trip."}), 500
 
-@trips_bp.route('/generate-invite', methods=['GET'])
-@cross_origin()
-@token_required
-def generate_invite(token):
-    data = get_request_data(token)
-    app.logger.debug(data)
-    trip_id = data['trip_id']
-
-    try:
-        trip_id = int(trip_id)
-    except ValueError as e:
-        app.logger.error(e)
-        return jsonify({"error": "Invalid trip ID."}), 400
-
-    # Generate an invite link
-    invite_link = f"http://myapp.com/invite/{trip_id}"
-    return jsonify({"invite_link": invite_link}), 200
-
 @trips_bp.route('/add-todo', methods=['POST'])
 @cross_origin()
 @token_required
@@ -337,7 +316,7 @@ def add_todo(token):
     if not trip_guest or trip_guest.rsvp_status != RsvpStatus.YES:
         return jsonify({"error": "User is not a guest of this trip."}), 403
     
-    todo = TripTodo(id=todo_id, trip_id=trip_id, text=text, checked=False, last_updated_by=user_id, last_updated_at=datetime.now())
+    todo = TripTodo(id=todo_id, trip_id=trip_id, text=text, checked=False, last_updated_at=datetime.now())
     
     try:
         db.session.add(todo)
@@ -453,7 +432,6 @@ def update_todo(token):
     try:
         todo.text = text
         todo.checked = checked
-        todo.last_updated_by = user_id
         todo.last_updated_at = datetime.now()
         db.session.commit()
         return jsonify({"message": "Note updated successfully."}), 200

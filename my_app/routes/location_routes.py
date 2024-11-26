@@ -6,7 +6,6 @@ from .utils import token_required, get_request_data, validate_user_trip
 
 trip_locations_bp = Blueprint('trip_locations', __name__)
 
-# TODO: Update routes to account for category table
 @trip_locations_bp.route('/add-location', methods=['POST'])
 @cross_origin()
 @token_required
@@ -20,9 +19,9 @@ def add_location(token):
     trip_id = data['trip_id']
     lat = data['lat']
     lng = data['lng']
-    name = data['name']
+    place_name = data['place_name']
     place_id = data['place_id']
-    category = data['category']
+    category_name = data['category_name']
 
     valid, error = validate_user_trip(user_id, trip_id)
     if not valid:
@@ -30,11 +29,11 @@ def add_location(token):
     
     # get the category id from the category name
     category_id = None
-    if category:
-        category = LocationCategory.query.filter_by(trip_id=trip_id, name=category).first()
+    if category_name:
+        category = LocationCategory.query.filter_by(trip_id=trip_id, name=category_name).first()
         if not category:
             try:
-                category = LocationCategory(trip_id=trip_id, name=category)
+                category = LocationCategory(trip_id=trip_id, name=category_name)
                 db.session.add(category)
                 db.session.commit()
                 category_id = category.id
@@ -47,7 +46,7 @@ def add_location(token):
 
     try:
         # Add the location to the trip
-        trip_location = TripLocation(trip_id=trip_id, user_id=user_id, latitude=lat, longitude=lng, name=name, place_id=place_id, category_id=category_id)
+        trip_location = TripLocation(trip_id=trip_id, user_id=user_id, latitude=lat, longitude=lng, name=place_name, place_id=place_id, category_id=category_id)
         db.session.add(trip_location)
         db.session.commit()
 
@@ -75,6 +74,10 @@ def add_category(token):
     if not valid:
         return jsonify({"message": f"Invalid user or trip id: {error}"}), 400
     
+    # check if the category already exists
+    if LocationCategory.query.filter_by(trip_id=trip_id, name=category).first():
+        return jsonify({"error": "Category already exists."}), 400
+
     try:
         # Add the category to the trip
         category = LocationCategory(trip_id=trip_id, name=category)
@@ -133,9 +136,9 @@ def update_location(token):
     
     user_id = data['user_id']
     trip_id = data['trip_id']
-    name = data['name']
+    place_name = data['place_name']
     place_id = data['place_id']
-    category = data['category']
+    category_name = data['category_name']
 
     valid, error = validate_user_trip(user_id, trip_id)
     if not valid:
@@ -146,9 +149,14 @@ def update_location(token):
     if not location:
         return jsonify({"error": "Location not found."}), 404
     
+    # Get the category
+    category = LocationCategory.query.filter_by(trip_id=trip_id, name=category_name).first()
+    if not category:
+        return jsonify({"error": "Category not found."}), 404
+    
     try:
-        location.name = name
-        location.category = category
+        location.name = place_name
+        location.category_id = category.id
         db.session.commit()
     except Exception as e:
         app.logger.error(f"Error updating location: {e}")
@@ -193,7 +201,7 @@ def delete_location(token):
 @cross_origin()
 @token_required
 def delete_category(token):
-    app.logger.info("trip_locations/delete-cateeory")
+    app.logger.info("trip_locations/delete-category")
 
     data = get_request_data(token)
     app.logger.debug(data)
@@ -205,22 +213,21 @@ def delete_category(token):
     if not valid:
         return jsonify({"message": f"Invalid user or trip id: {error}"}), 400
     
-    category = data['category']
+    category_name = data['category_name']
     category_id = None
 
-    if not category:
+    if not category_name:
         return jsonify({"error": "Category name is required."}), 400
     
-    if category:
-        category = LocationCategory.query.filter_by(trip_id=trip_id, name=category).first()
-        if not category:
-            return jsonify({"error": "Category not found."}), 404
-        category_id = category.id
+    category = LocationCategory.query.filter_by(trip_id=trip_id, name=category_name).first()
+    if not category:
+        return jsonify({"error": "Category not found."}), 404
+    category_id = category.id
 
     try:
-        db.session.delete(category)
         for location in TripLocation.query.filter_by(trip_id=trip_id, category_id=category_id).all():
-            location.category_id = None
+            db.session.delete(location)
+        db.session.delete(category)
         db.session.commit()
     except Exception as e:
         app.logger.error(f"Error deleting category: {e}")
@@ -228,3 +235,43 @@ def delete_category(token):
         return jsonify({"error": "An error occurred while deleting the category."}), 500
     
     return jsonify({"message": "Category successfully deleted."}), 200
+
+@trip_locations_bp.route('/update-category', methods=['PUT'])
+@cross_origin()
+@token_required
+def update_category(token):
+    app.logger.info("trip_locations/update-category")
+
+    data = get_request_data(token)
+    app.logger.debug(data)
+    
+    user_id = data['user_id']
+    trip_id = data['trip_id']
+
+    valid, error = validate_user_trip(user_id, trip_id)
+    if not valid:
+        return jsonify({"message": f"Invalid user or trip id: {error}"}), 400
+    
+    old_category_name = data['old_category_name']
+    new_category_name = data['new_category_name']
+
+    if not new_category_name or new_category_name.strip() == "" or new_category_name == "Unassigned":
+        return jsonify({"error": "Invalid category name."}), 400
+    
+    category = LocationCategory.query.filter_by(trip_id=trip_id, name=old_category_name).first()
+    if not category:
+        return jsonify({"error": "Category not found."}), 404
+    
+    try:
+        category.name = new_category_name
+        db.session.flush()
+        # update all the locations with the new category name
+        for location in TripLocation.query.filter_by(trip_id=trip_id, category_id=category.id).all():
+            location.category_id = category.id
+        db.session.commit()
+    except Exception as e:
+        app.logger.error(f"Error updating category: {e}")
+        db.session.rollback()
+        return jsonify({"error": "An error occurred while updating the category."}), 500
+    
+    return jsonify({"message": "Category successfully updated."}), 200

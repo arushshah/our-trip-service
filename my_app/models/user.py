@@ -15,6 +15,8 @@ class User(db.Model):
         DateTime(timezone=True), server_default=func.now()
     )
 
+    __table_args__ = (db.UniqueConstraint('phone_number'),)
+
     def __repr__(self):
         return (
             f"<User("
